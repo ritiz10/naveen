@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NewsPortal Authentication | Premium Campus News</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="auth-wrapper" style="background: radial-gradient(circle at 10% 20%, rgba(0, 255, 204, 0.05) 0%, transparent 100%), radial-gradient(circle at 90% 80%, rgba(112, 0, 255, 0.1) 0%, transparent 100%);">
+        <a href="index.html" class="logo" style="position: absolute; top: 2rem; left: 2rem; font-size: 2.2rem; transform: scale(1.1); filter: drop-shadow(0 0 10px var(--primary));">NewsKrish</a>
+        
+        <div class="auth-box glass" style="border: 2px solid var(--border); box-shadow: 0 30px 60px rgba(0,0,0,0.6); transform: translateY(-20px); opacity: 0; transition: all 0.6s ease-out; animation: slideUp 0.6s forwards;">
+            <div class="auth-tabs" style="border: none; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 0.5rem; margin-bottom: 3rem;">
+                <div class="auth-tab active" id="tab-login" style="border-radius: 8px;">Login</div>
+                <div class="auth-tab" id="tab-signup" style="border-radius: 8px;">Create Account</div>
+            </div>
+
+            <!-- Enhanced Alert Box -->
+            <div id="alert-box" class="alert" style="display: none; animation: fadeIn 0.4s ease;"></div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email Address</label>
+                    <input type="email" id="login-email" placeholder="name@campus.com" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+                <div style="text-align: right; margin-bottom: 2rem;">
+                    <a href="#" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: underline;">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 1.2rem; font-size: 1.1rem; letter-spacing: 1px;"> <i class="fas fa-sign-in-alt"></i> Access Portal</button>
+            </form>
+
+            <!-- Signup Form (Initially Hidden) -->
+            <form id="signup-form" style="display: none;">
+                <div class="form-group">
+                    <label><i class="fas fa-user-graduate"></i> Full Name</label>
+                    <input type="text" id="signup-name" placeholder="John Doe" required autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Campus Email</label>
+                    <input type="email" id="signup-email" placeholder="john.doe@university.edu" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> Roll Number / Profile ID</label>
+                    <input type="text" id="signup-profile-id" placeholder="e.g., 23CS101" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-building"></i> Department</label>
+                    <input type="text" id="signup-dept" placeholder="Computer Science & Engineering" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Set Password</label>
+                    <input type="password" id="signup-password" placeholder="Min. 8 characters" required minlength="8" autocomplete="new-password">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 1.2rem; font-size: 1.1rem;"> <i class="fas fa-user-plus"></i> Join News Portal</button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+
+    <script>
+        const tabLogin = document.getElementById('tab-login');
+        const tabSignup = document.getElementById('tab-signup');
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const alertBox = document.getElementById('alert-box');
+
+        // Check if already logged in instantly
+        (async () => {
+             const res = await fetch('/api/auth/me');
+             if (res.ok) window.location.href = 'profile.html';
+        })();
+
+        // Tab Switching
+        tabLogin.addEventListener('click', () => {
+            tabLogin.classList.add('active');
+            tabSignup.classList.remove('active');
+            loginForm.style.display = 'block';
+            signupForm.style.display = 'none';
+            alertBox.style.display = 'none';
+        });
+
+        tabSignup.addEventListener('click', () => {
+            tabSignup.classList.add('active');
+            tabLogin.classList.remove('active');
+            signupForm.style.display = 'block';
+            loginForm.style.display = 'none';
+            alertBox.style.display = 'none';
+        });
+
+        const showAlert = (message, type) => {
+            alertBox.className = `alert ${type}`;
+            alertBox.innerHTML = `<span><i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i> ${message}</span>`;
+            alertBox.style.display = 'block';
+        };
+
+        // Login Submit
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Authenticating...`;
+            btn.disabled = true;
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showAlert('Success! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = 'profile.html', 1000);
+                } else {
+                    showAlert(data.message || 'Access denied. Check your credentials.', 'error');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                showAlert('Connection failure. Check if server is running.', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // Signup Submit
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
+            btn.disabled = true;
+
+            const payload = {
+                name: document.getElementById('signup-name').value,
+                email: document.getElementById('signup-email').value,
+                password: document.getElementById('signup-password').value,
+                profile_id: document.getElementById('signup-profile-id').value,
+                department: document.getElementById('signup-dept').value,
+            };
+
+            try {
+                const res = await fetch('/api/auth/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    showAlert('Welcome to NewsPortal! Account created.', 'success');
+                    setTimeout(() => window.location.href = 'profile.html', 1500);
+                } else {
+                    showAlert(data.message || 'Registration failed.', 'error');
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                showAlert('Server error. Please try again.', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
